@@ -147,7 +147,7 @@ footer.site-footer{background:#0c1a2b;color:#fff;text-align:left;padding:3.2rem 
 </header>
 <div class="hero">
   <h1>Hacé tu pedido</h1>
-  <p>Elegí los productos, armá tu pedido y enviálo directo por WhatsApp. Precios por kg, sin IVA.</p>
+  <p>Elegí los productos, armá tu pedido y enviálo directo por WhatsApp.</p>
 </div>
 <div class="wrap">
   <div class="order-info">
@@ -306,8 +306,9 @@ const CATALOGO = [
   [29,"Lomo Tipo Canadiense",1.4,14802.90,"03/LOMO-TIPO-CANADIENSE.png"],
   [92,"Lomo a las Finas Hierbas",1.4,14802.90,"03/LOMO-HIERBAS.png"],
 ]],
-["Porchetta",[
+["Porchetta y Queso de cerdo",[
   [380,"Porchetta",4.5,16472.40,"03/PORCHETTA.png"],
+  [45,"Queso de Cerdo",3,4942.81,"03/QUESO-DE-CERDO.png"],
 ]],
 ["Bondiola",[
   [19,"Bondiola",1.6,17890.86,"03/Bondiola.png"],
@@ -364,9 +365,6 @@ const CATALOGO = [
 ["Crespón",[
   [502,"Crespón",1.8,14476.87,"04/CRESPON.png"],
   [542,"Crespón Al Vacío",1.8,17923.75,"04/Crespon-al-vacio-1.png"],
-]],
-["Queso de cerdo",[
-  [45,"Queso de Cerdo",3,4942.81,"03/QUESO-DE-CERDO.png"],
 ]],
 ];
 
@@ -538,7 +536,8 @@ function sendWhatsapp(){
   if(comentarios) texto += `Comentarios: ${comentarios}\n`;
   texto += '\n';
   items.forEach(it=>{
-    texto += `• Cód. ${it.prod[0]} — ${it.qty} un.\n`;
+    const desc = [it.discC, it.discV].filter(d=>d>0).map(d=>d+'%').join(' + ');
+    texto += `• Cód. ${it.prod[0]} — ${it.qty} un.${desc ? ' — '+desc : ''}\n`;
   });
   const msg = encodeURIComponent(texto.trim());
   const num = WHATSAPP_NUMBER.replace(/\D/g,'');
