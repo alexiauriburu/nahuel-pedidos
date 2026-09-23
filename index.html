@@ -562,6 +562,9 @@ function sendWhatsapp(){
   const url = num ? `https://wa.me/${num}?text=${msg}` : `https://wa.me/?text=${msg}`;
   // Abrir vía un <a> clickeado sincrónicamente: más confiable en navegadores
   // móviles / vistas embebidas que window.open, que suele ser bloqueado ahí.
+  // Primero vaciar el carrito (el mensaje ya está armado) y recién después abrir WhatsApp:
+  // al abrir WhatsApp algunos navegadores cortan la página y no llegaba a vaciarse.
+  try { pedidoEnviado(); } catch(e) {}
   const a = document.createElement('a');
   a.href = url;
   a.target = '_blank';
@@ -569,7 +572,6 @@ function sendWhatsapp(){
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  pedidoEnviado();
 }
 
 let searchDebounce;
