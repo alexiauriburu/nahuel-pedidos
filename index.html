@@ -132,14 +132,15 @@ footer.site-footer{background:#0c1a2b;color:#fff;text-align:left;padding:3.2rem 
   .site-footer .f-icons{justify-content:center;}
   .site-footer .f-bottom{justify-content:center;text-align:center;padding-bottom:4rem;}
 }
+.brand img.brand-logo{height:64px;width:auto;display:block;}
+@media (max-width:480px){.brand img.brand-logo{height:54px;}}
 </style>
 </head>
 <body>
 <header class="top" id="site-header">
   <div class="top-row">
     <div class="brand">
-      <img src="fotos/logo-n-only.png" alt="Nahuel">
-      <div><img src="fotos/logo-nahuel-word.png" alt="Nahuel" class="brand-word-img"><div class="brand-sub">Hecho en Argentina</div></div>
+      <img src="fotos/logo-nahuel-color.svg" alt="Nahuel" class="brand-logo">
     </div>
     <button class="cart-btn" id="btn-cart">🛒 Pedido <span class="n" id="cart-count">0</span></button>
   </div>
@@ -532,14 +533,14 @@ function sendWhatsapp(){
     return;
   }
   const comentarios = (document.getElementById('comentarios-envio').value||'').trim();
-  let msg = 'Hola! Quiero hacer este pedido a Nahuel:%0a';
-  msg += `%0aRazón social: ${encodeURIComponent(razonSocial)}%0a`;
-  if(comentarios) msg += `Comentarios de envío: ${encodeURIComponent(comentarios)}%0a`;
-  msg += '%0a';
+  // Mensaje directo: razón social, comentarios y los productos (código y unidades)
+  let texto = `Razón social: ${razonSocial}\n`;
+  if(comentarios) texto += `Comentarios: ${comentarios}\n`;
+  texto += '\n';
   items.forEach(it=>{
-    const descTxt = (it.discC||it.discV) ? ` (desc. cont. ${it.discC||0}% + vol. ${it.discV||0}%)` : '';
-    msg += `• Cód. ${it.prod[0]} — ${it.qty} un.${descTxt}%0a`;
+    texto += `• Cód. ${it.prod[0]} — ${it.qty} un.\n`;
   });
+  const msg = encodeURIComponent(texto.trim());
   const num = WHATSAPP_NUMBER.replace(/\D/g,'');
   const url = num ? `https://wa.me/${num}?text=${msg}` : `https://wa.me/?text=${msg}`;
   // Abrir vía un <a> clickeado sincrónicamente: más confiable en navegadores
