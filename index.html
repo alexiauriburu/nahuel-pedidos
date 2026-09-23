@@ -93,6 +93,12 @@ header.top{background:#fff;color:var(--navy);padding:1rem 1.2rem;position:sticky
 .toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:.55rem 1rem;border-radius:8px;font-size:.82rem;z-index:200;box-shadow:var(--shadow);opacity:0;transition:opacity .25s;pointer-events:none;}
 .toast.show{opacity:1;}
 footer{text-align:center;color:var(--ink-muted);font-size:.78rem;padding:2rem 1rem 3rem;}
+/* Barra de categorías: hover dorado + arrastrar con el mouse */
+.cats{scrollbar-width:none;cursor:grab;user-select:none;-webkit-user-select:none;}
+.cats::-webkit-scrollbar{display:none}
+.cats.dragging,.cats.dragging .cat-chip{cursor:grabbing;}
+.cat-chip{transition:background .15s,color .15s,border-color .15s,transform .15s;}
+@media (hover:hover){.cat-chip:hover{background:var(--gold);color:var(--navy);border-color:var(--gold);transform:translateY(-1px);}}
 </style>
 </head>
 <body>
@@ -496,6 +502,17 @@ document.getElementById('search-input').addEventListener('input', (e)=>{
 });
 
 render();
+
+// Barra de categorías: arrastrar con el mouse y mover con la ruedita
+(function(){
+  const cats=document.getElementById('cats');
+  let down=false,startX=0,startLeft=0,moved=false;
+  cats.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse') return; down=true; moved=false; startX=e.clientX; startLeft=cats.scrollLeft; });
+  window.addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-startX; if(Math.abs(dx)>5){ moved=true; cats.classList.add('dragging'); } if(moved) cats.scrollLeft=startLeft-dx; });
+  window.addEventListener('pointerup',()=>{ down=false; setTimeout(()=>cats.classList.remove('dragging'),0); });
+  cats.addEventListener('click',e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true);
+  cats.addEventListener('wheel',e=>{ if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ cats.scrollLeft+=e.deltaY; e.preventDefault(); } },{passive:false});
+})();
 
 // Ajusta la posición sticky de la barra de categorías al alto real del header,
 // para que nunca se superpongan aunque el header cambie de tamaño.
