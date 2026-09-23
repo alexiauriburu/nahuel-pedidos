@@ -609,9 +609,18 @@ function repetirUltimo(){
   showToast('Cargamos tu último pedido. Revisalo y envialo.');
 }
 function pedidoEnviado(){
+  // Guardar como "último pedido" y vaciar el carrito en el acto (también en la memoria del dispositivo)
   lsSet(LS_LAST, {fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}), items:cartResumen()});
-  setTimeout(()=>{ cargarEnCarrito({}); render(); updateCartCount(); closeCart(); actualizarBotonRepetir(); showToast('¡Pedido listo! Lo podés repetir cuando quieras.'); }, 400);
+  cargarEnCarrito({});
+  lsSet(LS_CART, {});
+  updateCartCount();
+  closeCart();
+  render();
+  actualizarBotonRepetir();
+  showToast('¡Pedido enviado! El carrito quedó vacío.');
 }
+// Si el navegador vuelve a mostrar la página guardada (al volver de WhatsApp), refrescar el carrito
+window.addEventListener('pageshow', e=>{ if(e.persisted){ cargarEnCarrito(lsGet(LS_CART)); render(); updateCartCount(); actualizarBotonRepetir(); } });
 (function(){
   const d=lsGet(LS_DATOS)||{}, r=document.getElementById('razon-social'), c=document.getElementById('comentarios-envio');
   if(d.razon) r.value=d.razon; if(d.coment) c.value=d.coment;
