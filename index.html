@@ -105,6 +105,10 @@ footer{text-align:center;color:var(--ink-muted);font-size:.78rem;padding:2rem 1r
 }
 /* Al saltar a una categoría, dejar lugar para el header y la barra fijos */
 .cat-section{scroll-margin-top:var(--sticky-offset,160px);}
+/* Botón flotante para volver arriba */
+.to-top{position:fixed;right:1.1rem;bottom:1.2rem;width:54px;height:54px;border-radius:50%;border:2px solid var(--gold);background:var(--navy);color:var(--gold);font-size:1.6rem;font-weight:800;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(3,25,44,.35);display:flex;align-items:center;justify-content:center;z-index:90;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .25s,transform .25s,background .15s,color .15s;}
+.to-top.show{opacity:1;transform:none;pointer-events:auto;}
+.to-top:hover{background:var(--gold);color:var(--navy);}
 </style>
 </head>
 <body>
@@ -154,6 +158,7 @@ footer{text-align:center;color:var(--ink-muted);font-size:.78rem;padding:2rem 1r
     </div>
   </div>
 </div>
+<button class="to-top" id="to-top" aria-label="Volver arriba" title="Volver arriba">↑</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -570,6 +575,14 @@ window.addEventListener('resize', fitCatsUnderHeader);
 if(window.ResizeObserver){
   new ResizeObserver(fitCatsUnderHeader).observe(document.getElementById('site-header'));
 }
+
+// Botón para volver arriba: aparece al bajar y sube suave hasta el principio
+(function(){
+  const b=document.getElementById('to-top');
+  const upd=()=>b.classList.toggle('show',window.scrollY>600);
+  window.addEventListener('scroll',upd,{passive:true}); upd();
+  b.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+})();
 </script>
 </body>
 </html>
