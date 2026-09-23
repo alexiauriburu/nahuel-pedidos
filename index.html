@@ -141,6 +141,11 @@ footer.site-footer{background:#0c1a2b;color:#fff;text-align:left;padding:3.2rem 
 }
 .brand img.brand-logo{height:64px;width:auto;display:block;}
 @media (max-width:480px){.brand img.brand-logo{height:54px;}}
+/* Botón para repetir el último pedido */
+.repetir-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:.3rem .6rem;flex-wrap:wrap;background:var(--gold);color:var(--navy);border:none;border-radius:10px;padding:.85rem 1rem;font-weight:800;font-size:1rem;cursor:pointer;margin-bottom:1rem;font-family:var(--font-body);box-shadow:var(--shadow);}
+.repetir-btn span{font-weight:600;font-size:.82rem;opacity:.8;}
+.repetir-btn:hover{background:var(--gold-strong);color:#fff;}
+.repetir-btn[hidden]{display:none;}
 </style>
 </head>
 <body>
@@ -159,6 +164,7 @@ footer.site-footer{background:#0c1a2b;color:#fff;text-align:left;padding:3.2rem 
 <div class="wrap">
   <div class="order-info">
     <h3>Datos del pedido</h3>
+    <button type="button" class="repetir-btn" id="btn-repetir" hidden>🔁 Repetir último pedido <span id="repetir-info"></span></button>
     <div class="co-field">
       <label for="razon-social">Nombre del cliente / Razón social *</label>
       <input type="text" id="razon-social" placeholder="Nombre / razón social" required>
@@ -240,8 +246,8 @@ const CAT_IMG = {
   "Crespón":"crespon","Queso de cerdo":"queso-de-cerdo",
 };
 function imgFor(catName){
-  if(catName==="Salame Milán") return "fotos/salame-milan.png";
-  return `fotos/${CAT_IMG[catName] || 'logo'}.jpg`;
+  if(catName==="Salame Milán") return "fotos/salame-milan.webp";
+  return `fotos/${CAT_IMG[catName] || 'logo'}.webp`;
 }
 // Foto específica por código de producto (prioridad sobre la foto genérica de categoría)
 const PROD_IMG = {
@@ -268,8 +274,8 @@ const PROD_IMG = {
 };
 const MILANCITO_CODES = [507,512,509,513];
 function imgForProd(codigo, catName){
-  if(PROD_IMG[codigo]) return `fotos/sku/${PROD_IMG[codigo]}.png`;
-  if(MILANCITO_CODES.includes(codigo)) return `fotos/milancito.jpg`;
+  if(PROD_IMG[codigo]) return `fotos/sku/${PROD_IMG[codigo]}.webp`;
+  if(MILANCITO_CODES.includes(codigo)) return `fotos/milancito.webp`;
   return imgFor(catName);
 }
 
@@ -483,10 +489,14 @@ function wire(){
   document.querySelectorAll('.disc-c,.disc-v').forEach(inp=>inp.addEventListener('input',()=>{
     syncCart(Number(inp.dataset.c));
   }));
-  document.getElementById('btn-cart').addEventListener('click', openCart);
-  document.getElementById('btn-close-cart').addEventListener('click', closeCart);
-  document.getElementById('overlay').addEventListener('click',(e)=>{ if(e.target.id==='overlay') closeCart(); });
-  document.getElementById('btn-wa').addEventListener('click', sendWhatsapp);
+  // Botones fijos: se conectan una sola vez (render() se vuelve a llamar al buscar)
+  if(!wire.listo){
+    wire.listo = true;
+    document.getElementById('btn-cart').addEventListener('click', openCart);
+    document.getElementById('btn-close-cart').addEventListener('click', closeCart);
+    document.getElementById('overlay').addEventListener('click',(e)=>{ if(e.target.id==='overlay') closeCart(); });
+    document.getElementById('btn-wa').addEventListener('click', sendWhatsapp);
+  }
 }
 
 function updateCartCount(){
@@ -512,7 +522,7 @@ function renderCart(){
         </div>
         <button class="ci-rm" data-c="${cod}">Quitar</button>
       </div>`;}).join('');
-    el.querySelectorAll('.ci-rm').forEach(b=>b.addEventListener('click',()=>{ delete cart[b.dataset.c]; renderCart(); updateCartCount(); }));
+    el.querySelectorAll('.ci-rm').forEach(b=>b.addEventListener('click',()=>{ delete cart[b.dataset.c]; renderCart(); updateCartCount(); render(); }));
   }
   document.getElementById('btn-wa').disabled = !items.length;
 }
@@ -558,6 +568,7 @@ function sendWhatsapp(){
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  pedidoEnviado();
 }
 
 let searchDebounce;
@@ -567,7 +578,51 @@ document.getElementById('search-input').addEventListener('input', (e)=>{
   searchDebounce = setTimeout(render, 120);
 });
 
+// ---- Guardar el pedido en este dispositivo y "Repetir último pedido" ----
+const LS_CART='nahuel_carrito', LS_LAST='nahuel_ultimo_pedido', LS_DATOS='nahuel_datos';
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function buscarProd(cod){ for(const c of CATALOGO){ const p=c[1].find(x=>x[0]===cod); if(p) return {prod:p, catName:c[0]}; } return null; }
+function cartResumen(){ const o={}; Object.entries(cart).forEach(([cod,it])=>{ o[cod]={qty:it.qty, discC:it.discC||0, discV:it.discV||0}; }); return o; }
+function cargarEnCarrito(items){
+  Object.keys(cart).forEach(k=>delete cart[k]);
+  Object.entries(items||{}).forEach(([cod,v])=>{
+    const f=buscarProd(Number(cod));
+    if(f && v && v.qty>0) cart[cod]={prod:f.prod, catName:f.catName, qty:v.qty, discC:v.discC||0, discV:v.discV||0};
+  });
+}
+const _updateCartCount = updateCartCount;
+updateCartCount = function(){ _updateCartCount(); lsSet(LS_CART, cartResumen()); };
+
+function actualizarBotonRepetir(){
+  const b=document.getElementById('btn-repetir'); const last=lsGet(LS_LAST);
+  const n = last && last.items ? Object.keys(last.items).length : 0;
+  if(!n){ b.hidden=true; return; }
+  document.getElementById('repetir-info').textContent = `(${last.fecha} · ${n} producto${n>1?'s':''})`;
+  b.hidden=false;
+}
+function repetirUltimo(){
+  const last=lsGet(LS_LAST); if(!last) return;
+  if(Object.keys(cart).length && !confirm('¿Cambiar el pedido que estás armando por tu último pedido?')) return;
+  cargarEnCarrito(last.items); render(); updateCartCount(); openCart();
+  showToast('Cargamos tu último pedido. Revisalo y envialo.');
+}
+function pedidoEnviado(){
+  lsSet(LS_LAST, {fecha:new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}), items:cartResumen()});
+  setTimeout(()=>{ cargarEnCarrito({}); render(); updateCartCount(); closeCart(); actualizarBotonRepetir(); showToast('¡Pedido listo! Lo podés repetir cuando quieras.'); }, 400);
+}
+(function(){
+  const d=lsGet(LS_DATOS)||{}, r=document.getElementById('razon-social'), c=document.getElementById('comentarios-envio');
+  if(d.razon) r.value=d.razon; if(d.coment) c.value=d.coment;
+  const save=()=>lsSet(LS_DATOS,{razon:r.value, coment:c.value});
+  r.addEventListener('input',save); c.addEventListener('input',save);
+  document.getElementById('btn-repetir').addEventListener('click', repetirUltimo);
+})();
+cargarEnCarrito(lsGet(LS_CART));
+
 render();
+updateCartCount();
+actualizarBotonRepetir();
 
 // Barra de categorías: la fila avanza despacio siguiendo el mouse, con efecto lupa
 (function(){
